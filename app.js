@@ -2,6 +2,7 @@
 let ALL_QUESTIONS = [];
 let selectedTopic = 'all';
 let selectedMode = 'quiz';
+let selectedCount = 30;
 let currentQuestions = [];
 let currentIndex = 0;
 let answers = {}; // {index: chosenKey}
@@ -109,11 +110,18 @@ function selectMode(mode) {
   updateStartInfo();
 }
 
+function selectCount(count) {
+  selectedCount = count;
+  document.querySelectorAll('#countSelection .mode-card').forEach(c => c.classList.remove('selected'));
+  document.getElementById('count' + (count === 'all' ? 'All' : count)).classList.add('selected');
+  updateStartInfo();
+}
+
 function updateStartInfo() {
   const topicLabel = TOPICS.find(t => t.id === selectedTopic)?.label || 'Tất cả';
   const modeLabel = selectedMode === 'quiz' ? '📝 Quiz Mode' : '⚡ Flashcard';
   const pool = getQuestionsForTopic(selectedTopic);
-  const cnt = Math.min(30, pool.length);
+  const cnt = selectedCount === 'all' ? pool.length : Math.min(selectedCount, pool.length);
   document.getElementById('selectedTopicLabel').textContent = topicLabel;
   document.getElementById('selectedModeLabel').textContent = modeLabel;
   document.getElementById('questionCountLabel').textContent = `${cnt} câu`;
@@ -124,8 +132,9 @@ function startSession() {
   const pool = getQuestionsForTopic(selectedTopic);
   if (pool.length === 0) { alert('Không có câu hỏi nào cho chủ đề này!'); return; }
   const shuffled = [...pool].sort(() => Math.random() - 0.5);
-  currentQuestions = shuffled.slice(0, 30);
-  sessionData = { topic: selectedTopic, mode: selectedMode };
+  const cnt = selectedCount === 'all' ? pool.length : selectedCount;
+  currentQuestions = shuffled.slice(0, cnt);
+  sessionData = { topic: selectedTopic, mode: selectedMode, count: selectedCount };
   if (selectedMode === 'quiz') startQuiz();
   else startFlash();
 }
@@ -306,6 +315,7 @@ function restartQuiz() {
   if (sessionData) {
     selectedTopic = sessionData.topic;
     selectedMode = sessionData.mode;
+    if (sessionData.count) selectCount(sessionData.count);
     startSession();
   }
 }
