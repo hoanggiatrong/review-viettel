@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ChuyênMôn Quiz — Ôn luyện Chuyên Môn</title>
+  <meta name="description" content="Ứng dụng quiz học tập chuyên môn với các chủ đề SQL, Git, Agile, DSA, ATTT, Linux và nhiều hơn nữa. Flashcard, chấm điểm, lịch sử và thống kê điểm yếu." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<!-- ===== BACKGROUND PARTICLES ===== -->
+<div class="bg-particles" id="bgParticles"></div>
+
+<!-- ===== NAVBAR ===== -->
+<nav class="navbar">
+  <div class="nav-brand">
+    <span class="brand-icon">🎓</span>
+    <span class="brand-text">ChuyênMôn<span class="brand-highlight">Quiz</span></span>
+  </div>
+  <div class="nav-links">
+    <button class="nav-btn active" id="navHome" onclick="showView('home')">🏠 Trang Chủ</button>
+    <button class="nav-btn" id="navHistory" onclick="showView('history')">📋 Lịch Sử</button>
+    <button class="nav-btn" id="navStats" onclick="showView('stats')">📊 Thống Kê</button>
+  </div>
+</nav>
+
+<!-- ===== HOME VIEW ===== -->
+<div id="viewHome" class="view active">
+  <div class="hero">
+    <div class="hero-badge">✨ Ôn tập chuyên môn hiệu quả</div>
+    <h1 class="hero-title">Học Thông Minh,<br><span class="gradient-text">Thi Tự Tin</span></h1>
+    <p class="hero-sub">Hơn 350 câu hỏi chuyên môn được phân loại theo chủ đề. Luyện quiz, flashcard và theo dõi tiến trình của bạn.</p>
+  </div>
+
+  <!-- Topic Filter -->
+  <div class="section">
+    <h2 class="section-title">Chọn Chủ Đề</h2>
+    <div class="topic-grid" id="topicGrid"></div>
+  </div>
+
+  <!-- Mode Selection -->
+  <div class="section">
+    <h2 class="section-title">Chế Độ Học</h2>
+    <div class="mode-grid">
+      <div class="mode-card" id="modeQuiz" onclick="selectMode('quiz')">
+        <div class="mode-icon">📝</div>
+        <div class="mode-name">Quiz Mode</div>
+        <div class="mode-desc">30 câu ngẫu nhiên, chấm điểm chi tiết</div>
+        <div class="mode-badge">Phổ biến</div>
+      </div>
+      <div class="mode-card" id="modeFlash" onclick="selectMode('flashcard')">
+        <div class="mode-icon">⚡</div>
+        <div class="mode-name">Flashcard</div>
+        <div class="mode-desc">Lật thẻ ôn nhanh kiến thức</div>
+        <div class="mode-badge">Nhanh</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Start Button -->
+  <div class="start-section">
+    <div class="selected-info" id="selectedInfo">
+      <span id="selectedTopicLabel">📚 Tất cả chủ đề</span>
+      <span class="divider">•</span>
+      <span id="selectedModeLabel">📝 Quiz Mode</span>
+      <span class="divider">•</span>
+      <span id="questionCountLabel">30 câu</span>
+    </div>
+    <button class="btn-start" id="btnStart" onclick="startSession()">
+      <span>Bắt Đầu</span>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+    </button>
+  </div>
+</div>
+
+<!-- ===== QUIZ VIEW ===== -->
+<div id="viewQuiz" class="view hidden">
+  <div class="quiz-container">
+    <!-- Header -->
+    <div class="quiz-header">
+      <div class="quiz-meta">
+        <span class="topic-tag" id="quizTopicTag">SQL</span>
+        <span class="quiz-progress-text" id="quizProgressText">Câu 1 / 30</span>
+      </div>
+      <button class="btn-exit" onclick="exitQuiz()">✕ Thoát</button>
+    </div>
+
+    <!-- Progress Bar -->
+    <div class="progress-bar-wrap">
+      <div class="progress-bar-fill" id="progressBarFill" style="width:0%"></div>
+    </div>
+
+    <!-- Question Card -->
+    <div class="question-card" id="questionCard">
+      <div class="question-number" id="questionNumber">01</div>
+      <div class="question-text" id="questionText"></div>
+
+      <!-- Options -->
+      <div class="options-grid" id="optionsGrid"></div>
+
+      <!-- Feedback -->
+      <div class="feedback-area hidden" id="feedbackArea">
+        <div class="feedback-icon" id="feedbackIcon"></div>
+        <div class="feedback-text" id="feedbackText"></div>
+      </div>
+    </div>
+
+    <!-- Navigation -->
+    <div class="quiz-nav">
+      <button class="btn-nav" id="btnPrev" onclick="prevQuestion()" disabled>← Câu Trước</button>
+      <div class="question-dots" id="questionDots"></div>
+      <button class="btn-nav" id="btnNext" onclick="nextQuestion()">Câu Tiếp →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== RESULT VIEW ===== -->
+<div id="viewResult" class="view hidden">
+  <div class="result-container">
+    <div class="result-trophy" id="resultTrophy">🏆</div>
+    <h1 class="result-title" id="resultTitle">Hoàn Thành!</h1>
+    <div class="result-score-ring">
+      <svg class="score-svg" viewBox="0 0 120 120">
+        <circle class="score-bg" cx="60" cy="60" r="50" />
+        <circle class="score-fill" id="scoreCircle" cx="60" cy="60" r="50" />
+      </svg>
+      <div class="score-inner">
+        <div class="score-num" id="scoreNum">0</div>
+        <div class="score-label">điểm</div>
+      </div>
+    </div>
+    <div class="result-stats">
+      <div class="stat-card">
+        <div class="stat-val" id="statCorrect">0</div>
+        <div class="stat-lbl">✅ Đúng</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val" id="statWrong">0</div>
+        <div class="stat-lbl">❌ Sai</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val" id="statSkipped">0</div>
+        <div class="stat-lbl">⏭ Bỏ qua</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val" id="statTime">0s</div>
+        <div class="stat-lbl">⏱ Thời gian</div>
+      </div>
+    </div>
+    <div class="result-message" id="resultMessage"></div>
+
+    <!-- Review Wrong Answers -->
+    <div class="review-section">
+      <h3 class="review-title">📖 Xem Lại Câu Sai</h3>
+      <div id="reviewList"></div>
+    </div>
+
+    <div class="result-actions">
+      <button class="btn-secondary" onclick="showView('home')">🏠 Về Trang Chủ</button>
+      <button class="btn-primary" onclick="restartQuiz()">🔄 Làm Lại</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== FLASHCARD VIEW ===== -->
+<div id="viewFlash" class="view hidden">
+  <div class="flash-container">
+    <div class="quiz-header">
+      <div class="quiz-meta">
+        <span class="topic-tag" id="flashTopicTag">Flashcard</span>
+        <span class="quiz-progress-text" id="flashProgressText">1 / 30</span>
+      </div>
+      <button class="btn-exit" onclick="exitQuiz()">✕ Thoát</button>
+    </div>
+    <div class="progress-bar-wrap">
+      <div class="progress-bar-fill" id="flashProgressFill" style="width:0%"></div>
+    </div>
+
+    <div class="flashcard-wrap">
+      <div class="flashcard" id="flashcard" onclick="flipCard()">
+        <div class="card-inner" id="cardInner">
+          <div class="card-front">
+            <div class="card-label">❓ CÂU HỎI</div>
+            <div class="card-content" id="flashQuestion"></div>
+            <div class="card-hint">👆 Nhấn để xem đáp án</div>
+          </div>
+          <div class="card-back">
+            <div class="card-label">✅ ĐÁP ÁN</div>
+            <div class="card-content" id="flashAnswer"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="flash-nav">
+      <button class="btn-flash-nav" onclick="flashPrev()">← Trước</button>
+      <div class="flash-actions">
+        <button class="btn-knew" onclick="markKnew()">✅ Đã biết</button>
+        <button class="btn-review" onclick="markReview()">🔄 Ôn lại</button>
+      </div>
+      <button class="btn-flash-nav" onclick="flashNext()">Tiếp →</button>
+    </div>
+    <div class="flash-counter">
+      <span class="knew-count">✅ <span id="knewCount">0</span></span>
+      <span class="review-count">🔄 <span id="reviewCount">0</span></span>
+    </div>
+  </div>
+</div>
+
+<!-- ===== HISTORY VIEW ===== -->
+<div id="viewHistory" class="view hidden">
+  <div class="page-container">
+    <div class="page-header">
+      <h1 class="page-title">📋 Lịch Sử Bài Thi</h1>
+      <button class="btn-danger-sm" onclick="clearHistory()">🗑 Xóa Tất Cả</button>
+    </div>
+    <div id="historyList" class="history-list"></div>
+  </div>
+</div>
+
+<!-- ===== STATS VIEW ===== -->
+<div id="viewStats" class="view hidden">
+  <div class="page-container">
+    <div class="page-header">
+      <h1 class="page-title">📊 Thống Kê & Điểm Yếu</h1>
+    </div>
+    <div class="stats-overview" id="statsOverview"></div>
+    <div class="weak-section">
+      <h2 class="section-title">🔴 Câu Hay Sai Nhất</h2>
+      <p class="weak-desc">Những câu này bạn đã sai nhiều lần — hãy ôn kỹ thêm!</p>
+      <div id="weakList"></div>
+    </div>
+    <div class="topic-stats-section">
+      <h2 class="section-title">📚 Thống Kê Theo Chủ Đề</h2>
+      <div id="topicStatsList"></div>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
