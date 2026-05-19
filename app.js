@@ -264,7 +264,8 @@ function finishQuiz() {
     else { wrong++; wrongItems.push({ q, chosen, correctKey }); }
   });
   const pct = Math.round((correct / currentQuestions.length) * 100);
-  saveHistory({ topic: selectedTopic, mode: 'quiz', correct, wrong, skipped, total: currentQuestions.length, pct, elapsed, date: new Date().toISOString() });
+  const wrongIds = wrongItems.map(w => w.q.Stt || w.q.stt);
+  saveHistory({ id: Date.now(), topic: selectedTopic, mode: 'quiz', correct, wrong, skipped, total: currentQuestions.length, pct, elapsed, date: new Date().toISOString(), wrongIds });
   showResultView(correct, wrong, skipped, pct, elapsed, wrongItems);
 }
 
@@ -313,10 +314,15 @@ function showResultView(correct, wrong, skipped, pct, elapsed, wrongItems) {
 
 function restartQuiz() {
   if (sessionData) {
-    selectedTopic = sessionData.topic;
-    selectedMode = sessionData.mode;
-    if (sessionData.count) selectCount(sessionData.count);
-    startSession();
+    if (sessionData.isRetry && sessionData.wrongIds) {
+      currentQuestions = ALL_QUESTIONS.filter(q => sessionData.wrongIds.includes(q.Stt || q.stt)).sort(() => Math.random() - 0.5);
+      startQuiz();
+    } else {
+      selectedTopic = sessionData.topic;
+      selectedMode = sessionData.mode;
+      if (sessionData.count) selectCount(sessionData.count);
+      startSession();
+    }
   }
 }
 
@@ -398,16 +404,19 @@ function renderHistory() {
     const dateStr = new Date(h.date).toLocaleString('vi-VN');
     const topicLabel = TOPICS.find(t => t.id === h.topic)?.label || h.topic;
     const cls = h.pct >= 90 ? 'excellent' : h.pct >= 70 ? 'good' : h.pct >= 50 ? 'average' : 'poor';
-    return `<div class="history-item">
-      <div class="history-info">
-        <div class="history-date">🕐 ${dateStr}</div>
-        <div class="history-topic">${topicLabel}</div>
-        <div class="history-meta">✅ ${h.correct} đúng &nbsp;❌ ${h.wrong} sai &nbsp;⏭ ${h.skipped} bỏ qua &nbsp;⏱ ${h.elapsed}s</div>
+    return `<div class="history-item-wrap" style="background:var(--card); border:1px solid var(--card-border); border-radius:var(--radius); margin-bottom:14px; padding:20px;">
+      <div class="history-item" style="border:none; padding:0; margin-bottom:0; background:transparent;">
+        <div class="history-info">
+          <div class="history-date">🕐 ${dateStr}</div>
+          <div class="history-topic">${topicLabel}</div>
+          <div class="history-meta">✅ ${h.correct} đúng &nbsp;❌ ${h.wrong} sai &nbsp;⏭ ${h.skipped} bỏ qua &nbsp;⏱ ${h.elapsed}s</div>
+        </div>
+        <div class="history-score">
+          <div class="score-badge ${cls}">${h.pct}%</div>
+          <div class="score-mode">${h.total} câu</div>
+        </div>
       </div>
-      <div class="history-score">
-        <div class="score-badge ${cls}">${h.pct}%</div>
-        <div class="score-mode">${h.total} câu</div>
-      </div>
+      ${h.wrongIds && h.wrongIds.length > 0 ? `<div style="margin-top: 16px; border-top: 1px solid var(--card-border); padding-top: 12px; text-align: right;"><button class="btn-secondary" style="padding: 6px 14px; font-size: 0.8rem;" onclick="retryWrongHistory(${h.id})">🔄 Làm lại ${h.wrongIds.length} câu sai</button></div>` : ''}
     </div>`;
   }).join('');
 }
@@ -417,6 +426,26 @@ function clearHistory() {
     localStorage.removeItem('quizHistory');
     renderHistory();
   }
+}
+
+function retryWrongHistory(id) {
+  const hist = JSON.parse(localStorage.getItem('quizHistory') || '[]');
+  const entry = hist.find(h => h.id === id);
+  if (!entry || !entry.wrongIds || entry.wrongIds.length === 0) return;
+  
+  currentQuestions = ALL_QUESTIONS.filter(q => entry.wrongIds.includes(q.Stt || q.stt));
+  if (currentQuestions.length === 0) {
+    alert('Không tìm thấy dữ liệu các câu sai này (có thể file dữ liệu đã thay đổi).');
+    return;
+  }
+  
+  selectedTopic = entry.topic;
+  selectedMode = 'quiz';
+  selectedCount = currentQuestions.length;
+  sessionData = { topic: selectedTopic, mode: 'quiz', count: selectedCount, isRetry: true, wrongIds: entry.wrongIds };
+  
+  currentQuestions = currentQuestions.sort(() => Math.random() - 0.5);
+  startQuiz();
 }
 
 // ====== WEAK TRACKING ======
